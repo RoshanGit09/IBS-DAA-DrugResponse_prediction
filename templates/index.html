@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepCDR - Drug Sensitivity Prediction</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>DeepCDR Drug Sensitivity Predictor</h1>
+        <p>Predict whether a drug will be effective against a specific cancer cell line</p>
+        
+        <form method="POST" action="/">
+            <div class="form-group">
+                <label for="drug_id">Select Drug (PubChem ID):</label>
+                <select id="drug_id" name="drug_id" required>
+                    <option value="">-- Select a drug --</option>
+                    {% for drug in drugs %}
+                    <option value="{{ drug }}">{{ drug }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="cell_line_id">Select Cell Line:</label>
+                <select id="cell_line_id" name="cell_line_id" required>
+                    <option value="">-- Select a cell line --</option>
+                    {% for cell_line in cell_lines %}
+                    <option value="{{ cell_line }}">{{ cell_line }}</option>
+                    {% endfor %}
+                </select>
+                <small class="form-text">Only cell lines with complete data are shown</small>
+            </div>
+            
+            <button type="submit" class="btn">Predict Sensitivity</button>
+        </form>
+    </div>
+</body>
+</html>

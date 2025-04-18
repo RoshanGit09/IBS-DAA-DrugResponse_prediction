@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Results styling */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .results {
+            margin: 20px 0;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .prediction-card {
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            color: white;
+            text-align: center;
+        }
+        
+        .prediction-card.sensitive {
+            background: linear-gradient(135deg, #28a745, #218838);
+        }
+        
+        .prediction-card.not-sensitive {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+        }
+        
+        .interpretation {
+            margin: 25px 0;
+            padding: 20px;
+            background: #e9ecef;
+            border-radius: 8px;
+            border-left: 4px solid #6c757d;
+        }
+        
+        .metrics {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .metric {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            min-width: 120px;
+            text-align: center;
+            margin: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .metric-value {
+            color: #343a40;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .metric-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .ic50-value {
+            color: #343a40;
+            font-weight: bold;
+        }
+        
+        .error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-left: 4px solid #f5c6cb;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .technical-details {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #0069d9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Prediction Results</h1>
+        
+        {% if not result.success %}
+            <div class="error">
+                <h2>Error</h2>
+                <p>{{ result.error }}</p>
+                
+                <h3>Troubleshooting Tips:</h3>
+                <ul>
+                    <li>Check that the cell line exists in our database</li>
+                    <li>Verify all required data files are properly loaded</li>
+                    <li>Try a different drug/cell line combination</li>
+                </ul>
+                
+                <h3>Technical Details:</h3>
+                <div class="technical-details">
+                    <p><strong>Drug ID:</strong> {{ result.drug_id if result.drug_id else 'Not provided' }}</p>
+                    <p><strong>Cell Line:</strong> {{ result.cell_line_id if result.cell_line_id else 'Not provided' }}</p>
+                </div>
+            </div>
+        {% else %}
+            <div class="results">
+                <h2>Drug Sensitivity Prediction</h2>
+                <p class="subtitle">Results for <strong>{{ result.drug_id }}</strong> on <strong>{{ result.cell_line_id }}</strong></p>
+                <div style="text-align:center; margin: 20px 0;">
+                    <h3>Chemical Structure</h3>
+                    <img src="data:image/png;base64,{{ result.structure_image }}" alt="Drug structure">
+                </div>
+                
+                <div class="prediction-card {% if result.prediction == 'Sensitive' %}sensitive{% else %}not-sensitive{% endif %}">
+                    <h3>{{ result.prediction }}</h3>
+                    <div class="metrics">
+                        <div class="metric">
+                            <div class="metric-value">{{ result.confidence|default('N/A') }}%</div>
+                            <div class="metric-label">Confidence</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">{{ result.probability|default('N/A') }}</div>
+                            <div class="metric-label">Probability</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value ic50-value">{{ result.ic50|default('N/A') }} μM</div>
+                            <div class="metric-label">IC50</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="interpretation">
+                    <h3>Interpretation</h3>
+                    {% if result.prediction == 'Sensitive' %}
+                        <p>This drug is predicted to be <strong>effective</strong> against this cell line with <strong>{{ result.confidence }}% confidence</strong>.</p>
+                        <p>The estimated half-maximal inhibitory concentration (IC50) is <strong class="ic50-value">{{ result.ic50 }} µM</strong>, indicating good potency (lower values indicate greater effectiveness).</p>
+                    {% else %}
+                        <p>This drug is predicted to be <strong>not effective</strong> against this cell line with <strong>{{ result.confidence }}% confidence</strong>.</p>
+                        <p>The estimated half-maximal inhibitory concentration (IC50) is <strong class="ic50-value">{{ result.ic50 }} µM</strong>, indicating limited potency (higher values indicate lower effectiveness).</p>
+                    {% endif %}
+                    
+                    <h4>About IC50</h4>
+                    <p>IC50 represents the concentration of drug needed to inhibit 50% of cancer cell growth. Lower IC50 values indicate more potent drugs:</p>
+                    <ul>
+                        <li>&lt; 1 µM: Highly potent</li>
+                        <li>1-10 µM: Moderately potent</li>
+                        <li>&gt; 10 µM: Weak potency</li>
+                    </ul>
+                </div>
+            </div>
+        {% endif %}
+        
+        <a href="{{ url_for('index') }}" class="btn">Make Another Prediction</a>
+    </div>
+</body>
+</html>
